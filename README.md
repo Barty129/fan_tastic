@@ -1,3 +1,4 @@
 # fan_tastic
 
-I can commit code
+Bart, Tom - Compressor
+Ellis, Vlad - Turbine
