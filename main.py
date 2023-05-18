@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+from matplotlib import pyplot as plt
 from numpy.polynomial import Polynomial
 
 import fantastic.turbomachinery as tm
@@ -43,7 +44,6 @@ def main():
     V_r_ri = mdot / 2 / np.pi / inlet.density / com.rotor.ri / com.h
     V_r_ro = mdot / 2 / np.pi / inlet.density / com.rotor.ro / com.h
 
-
     # solve quadratic for bo from omega
     w = 8000 * 2 * np.pi / 60
 
@@ -60,22 +60,44 @@ def main():
     V_t_ro = dh0 / w / com.rotor.ro
     U_ri = w * com.rotor.ri
     U_ro = w * com.rotor.ro
-    V_rel_ri = np.sqrt(V_r_ri ** 2 + U_ri ** 2)
-    V_rel_ro = np.sqrt(V_r_ro ** 2 + (V_t_ro - U_ro) ** 2)
+    # W is relative velocity
+    W_ri = np.sqrt(V_r_ri ** 2 + U_ri ** 2)
+    W_ro = np.sqrt(V_r_ro ** 2 + (V_t_ro - U_ro) ** 2)
 
-    # find bi
-    com.rotor.bi = np.arctan(U_ri/V_r_ri)
+    # find bi: beta_in = (alpha_in-5deg) as per handout
+    com.rotor.bi = np.arctan(U_ri / V_r_ri) - 5 * deg
 
     # rule of thumb
-    assert (V_rel_ro / V_rel_ri > 1 / 3)
+    assert (W_ro / W_ri > 1 / 3)
 
     # results are ok to show!
     print(f'beta_1: {com.rotor.bi / deg:.2f}deg')
     print(f'beta_2: {com.rotor.bo / deg:.2f}deg')
     print(f'omega: {rig.shaft.omega * 30 / np.pi:.0f}rpm')
 
-    V_t_si = V_t_ro * com.rotor.ro / com.stator.ri
-    V_t_so = V_t_ro * com.rotor.ro / com.stator.ro
+    # now for blade numbers
+    # first get blade profile for constant deltaP across blade
+    r = np.linspace(com.rotor.ri, com.rotor.ro, 100)
+    c1 = 2*(np.tan(com.rotor.bo) - np.tan(com.rotor.bi)) / (com.rotor.ro ** 2 - com.rotor.ri ** 2)
+    c2 = np.tan(com.rotor.bi) - c1 * com.rotor.ri ** 2
+    b = np.arctan(c1/2 * r ** 2 + c2)
+    # vels
+    V_r_r = mdot / 2 / np.pi / inlet.density / r / com.h
+    V_t_r = w * r + V_r_r * np.tan(b)
+    W_r = V_r_r / np.cos(b)
+
+    drVt_dr = scipy.interpolate.InterpolatedUnivariateSpline(r, r * V_t_r).derivative(1)
+    Nb_min = mdot * drVt_dr(r) / (2 * inlet.density * W_r ** 2 * r * com.h)
+
+    Nb = np.ceil(1.25 * np.max(Nb_min))
+    print(f'num. compressor blades: {Nb}')
+    print(c1,c2)
+
+    for i in range(1):
+        plt.polar(np.tan(b)*np.log(r) + c1 + i * 2 * np.pi / 12, r, 'black')
+    plt.yticks([])
+    plt.ylim(0, None)
+    plt.show()
 
 
 if __name__ == "__main__":
