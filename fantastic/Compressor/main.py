@@ -61,16 +61,17 @@ def main():
 
     r_vals = np.linspace(gb.r_1, gb.r_2, 100)
     c1 = 2*(np.tan(beta_2) - np.tan(beta_1)) / (gb.r_2 ** 2 - gb.r_1 ** 2)
-    c2 = np.tan(beta_1) - c1 * gb.r_1 ** 2
-    beta_vals = np.arctan(c1/2 * r_mid_vals ** 2 + c2)
+    c2 = np.tan(beta_1) - c1/2 * gb.r_1 ** 2
+    beta_vals_tan = c1/2 * r_vals ** 2 + c2
 
-    print(int(Nb))
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    for i in range(int(Nb)):
-        ax.plot(np.tan(beta_vals)*np.log(r_vals) + c1 +  i * 2 * np.pi / int(Nb), r_vals, 'blue')
+    for i in range(1):
+        ax.plot(beta_vals_tan*np.log(r_vals) + c2 +  i * 2 * np.pi / int(Nb), r_vals, 'blue')
     plt.yticks([])
     plt.ylim(0, None)
     plt.show()
+
+    r_3 = gb.r_2 * gb.G_val
 
 if __name__ == "__main__":
     main()
