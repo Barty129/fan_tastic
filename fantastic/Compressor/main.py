@@ -53,6 +53,10 @@ def main():
 
     Nb_min = gb.m_dot * dvthetdr(r_mid_vals) / (2 * gb.rho * r_mid_vals * gb.blade_height * (W_av_vals**2))
     Nb = np.ceil(1.25 * np.max(Nb_min))
+    if Nb > 21:
+        Nb = 21
+    elif Nb < 7:
+        Nb = 7
     print('No. Blades = {}'.format(Nb))
 
     r_vals = np.linspace(gb.r_1, gb.r_2, 100)
@@ -64,11 +68,9 @@ def main():
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     for i in range(int(Nb)):
         ax.plot(np.tan(beta_vals)*np.log(r_vals) + c1 +  i * 2 * np.pi / int(Nb), r_vals, 'blue')
-        print(i)
     plt.yticks([])
     plt.ylim(0, None)
     plt.show()
 
 if __name__ == "__main__":
     main()
-    
