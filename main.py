@@ -54,7 +54,7 @@ def main():
 
     # set parameters
     com.rotor.bo = scipy.optimize.root_scalar(f, w, bracket=(0.01 - np.pi / 2, np.pi / 2 - 0.01)).root
-    rig.shaft.omega = f(com.rotor.bo, 0)
+    rig.shaft.omega = f(com.rotor.bo, 0) 
 
     # find rotor vels
     V_t_ro = dh0 / w / com.rotor.ro
@@ -66,6 +66,7 @@ def main():
 
     # find bi: beta_in = (alpha_in-5deg) as per handout
     com.rotor.bi = np.arctan(U_ri / V_r_ri) - 5 * deg
+    #com.rotor.bi = np.arctan(-U_ri / V_r_ri) + 5 * deg
 
     # rule of thumb
     assert (W_ro / W_ri > 1 / 3)
