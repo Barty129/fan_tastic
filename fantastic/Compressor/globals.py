@@ -3,7 +3,7 @@ import numpy as np
 m_dot = 0.061 #kg/s
 rho = 1.2046 #kg/m3
 
-r_1 = 0.01
+r_1 = 0.02
 r_2 = 0.10 #m
 
 suction = 11.85 * 10**3 #Pa
