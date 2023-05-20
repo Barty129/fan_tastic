@@ -86,7 +86,7 @@ def bladenumber():
     Nb = mdot * drVthetadr / (2 * density * Wavg ** 2 * rmid * h)
     return(Nb)
 
-def throatspace(r, theta):
+def throatspace(r, thet, boundary = 0):
     # finds minimum throat area in (ie min distance from any point to any point)
     mindist = 1000
     for i in range(0, len(r)):
@@ -98,10 +98,13 @@ def throatspace(r, theta):
             dist = ((x2 - x1) ** 2 + (y2 - y1) ** 2) **  0.5
             if dist < mindist:
                 mindist = dist
+    mindist = mindist - 0.0005 # accounts for blade thickness
+    if boundary == 1:
+        mindist = mindist * 0.95 # accounts for boundary layer thickness
     minarea = mindist * h
     return minarea
 
-def maxthroat(r, theta):
+def maxthroat(r, theta, boundary = 0):
     # finds throat area maximum (ie min distance of any point to trailing edge)
     mindist = 1000
     for j in range(0, len(r)):
@@ -117,6 +120,9 @@ def maxthroat(r, theta):
             mindist = dist1
         if dist2 < mindist:
             mindist = dist2
+    mindist = mindist - 0.0005 # accounts for blade thickness
+    if boundary == 1:
+        mindist = mindist * 0.95 # accounts for boundary layer thickness
     minarea = mindist * h
     return minarea
 
@@ -137,35 +143,48 @@ def diffuserbladeplot(N, r1, r2, step, beta1, beta2):
     ax.grid(True)
     plt.show()
     return(r, theta)
-'''
-betas = np.arange(-1.5, 1.5, 0.1)
-omegas = []
-velratios = []
-for i in range(0, len(betas)):
-    beta2 = betas[i]
-    Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2 = velocitycalc()
-    N = bladenumber()
-    N = round(N * 1.25)
-    Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2 = velocitycalc(N) # recalculates values using a refined blade number
-    omegas.append(omega)
-    velratios.append(Vrel2/Vrel1)
-print(velratios)
 
-'''
+def rotoroptimiser():
+    # plots graphs of omega and relative velocity ratio for a range of inner radii and betas
+    #rinner = np.arange(0.025, 0.075, 0.005)
+    rinner = [0.05]
+    betas = np.arange(-1.5, 1.5, 0.1)
+    omegas = [[0 for j in range(len(betas))] for i in range(len(rinner))]
+    velratios = [[0 for j in range(len(betas))] for i in range(len(rinner))]
+    for j in range(0, len(rinner)):
+        r1 = rinner[j]
+        for i in range(0, len(betas)):
+            beta2 = betas[i]
+            omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc()
+            N = bladenumber()
+            N = round(N * 1.25)
+            omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc(N) # recalculates values using a refined blade number
+            omegas[j][i] = omega
+            velratios[j][i] = Vrel2/Vrel1
+    for i in range(0, len(rinner)):
+        plt.plot(betas, omegas[i])
+    plt.xlabel("Beta2")
+    plt.ylabel("Omega")
+    plt.show()
+    for i in range(0, len(rinner)):
+        plt.plot(betas, velratios[i])
+    plt.xlabel("Beta2")
+    plt.ylabel("Relative velocity ratio")
+    plt.show()
+
+beta2 = -1
 omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc()
 N = bladenumber()
 N = round(N * 1.25)
-omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc(N) # recalculates values using a refined blade number
+omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc(N)
 bladeplot(N, r1, r2, step, beta1, beta2)
-print(omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2)
-
 r3 = r2 * vaneless
 Vr3 = Vr2 * r2/r3
 Vtheta3 = Vtheta2 * r2/r3
 betad1 = np.arctan(Vtheta3/Vr3)
-betad2 = 1.1
+betad2 = 1.3
 
-r, theta = diffuserbladeplot(10, r3, r4, step, betad1, betad2)
+r, theta = diffuserbladeplot(5, r3, r4, step, betad1, betad2)
 minarea = throatspace(r, theta)
 exitarea = maxthroat(r, theta)
 print("Area ratio is", exitarea/minarea)
