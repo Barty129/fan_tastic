@@ -26,7 +26,10 @@ def main():
     v2_t_rel = np.sqrt(V2_r ** 2 + (v2_theta - Ub_2) ** 2)
 
     # find bi: beta_in = (alpha_in-5deg) as per handout
-    beta_1 = np.arctan(-Ub_1 / V1_r) + 5 * deg
+    if np.arctan(-Ub_1 / V1_r) >= 0:
+        beta_1 = np.arctan(-Ub_1 / V1_r) - 5 * deg
+    else:
+        beta_1 = np.arctan(-Ub_1 / V1_r) + 5 * deg
 
     #De Haller test
     if v2_t_rel/v1_t_rel < 1/3:
@@ -53,23 +56,9 @@ def main():
 
     Nb_min = gb.m_dot * dvthetdr(r_mid_vals) / (2 * gb.rho * r_mid_vals * gb.blade_height * (W_av_vals**2))
     Nb = np.ceil(1.25 * np.max(Nb_min))
-    if Nb > 21:
-        Nb = 21
-    elif Nb < 7:
-        Nb = 7
     print('No. Blades = {}'.format(Nb))
 
-    r_vals = np.linspace(gb.r_1, gb.r_2, 100)
-    c1 = 2*(np.tan(beta_2) - np.tan(beta_1)) / (gb.r_2 ** 2 - gb.r_1 ** 2)
-    c2 = np.tan(beta_1) - c1/2 * gb.r_1 ** 2
-    beta_vals_tan = c1/2 * r_vals ** 2 + c2
-
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    for i in range(1):
-        ax.plot(beta_vals_tan*np.log(r_vals) + c2 +  i * 2 * np.pi / int(Nb), r_vals, 'blue')
-    plt.yticks([])
-    plt.ylim(0, None)
-    plt.show()
+    fn.rotor_plot(gb.r_1, gb.r_2, beta_1, beta_2, 0.001)
 
     r_3 = gb.r_2 * gb.G_val
 
