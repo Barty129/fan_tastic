@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # design parameters to be altered
-beta2 = -0.75 # trailing edge blade angle in radians
-r1 = 0.05 # leading edge radius
+beta2 = 1.2 # trailing edge blade angle in radians
+r1 = 0.025 # leading edge radius
 inletangle = 5 # angle of incidence of leading edge in degrees
 vaneless = 1.1 # ratio of diffuser leading edge to rotor trailing edge radii
 arearatio = 3
@@ -47,25 +47,34 @@ def velocitycalc(N = 0):
         sigma = 1 - (np.cos(beta2)**0.5)/N**0.7
     else:
         sigma = 0.85
+    Vr1 = mdot/(2 * np.pi * density * r1 * h)
     Vr2 = mdot/(2 * np.pi * density * r2 * h)
+
     a = sigma * r2 ** 2
     b = r2 * Vr2 * np.tan(beta2)
     c = -dh0
     omega = (-b + (b**2 - 4*a*c)**0.5)/(2*a)
-    Vtheta2 = sigma * omega * r2 + Vr2 * np.tan(beta2)
-    alphaRel2 = np.arctan(Vtheta2 - omega * r2)/Vr2
+
+    U2 = omega * r2
+    U1 = omega * r1
+    Vtheta1 = 0
+    VthetaRel1 = -1 * U1
+    VthetaRel2ideal = Vr2 * np.tan(beta2)
+    Vtheta2ideal = VthetaRel2ideal + U2
+    Vtheta2 = sigma * Vtheta2ideal
+    VthetaRel2 = Vtheta2 - U2
+    Vrel1 = (Vr1 ** 2 + VthetaRel1 ** 2) ** 0.5
+    Vrel2 = (Vr2 ** 2 + VthetaRel2 ** 2) ** 0.5
+    alpha1 = Vtheta1/Vr1
     alpha2 = Vtheta2/Vr2
-    Vtheta1 = omega * r1
-    Vr1 = mdot/(2 * np.pi * density * r1 * h)
-    Vtheta1 = Vtheta2 * r1/r2
-    alphaRel1 = np.arctan(-Vtheta1/Vr1)
-    if alphaRel1 >= 0:
-        beta1 = alphaRel1 - inletangle * np.pi/180
-    else:
-        beta1 = alphaRel1 + inletangle * np.pi/180
+    alphaRel1 = np.arctan(VthetaRel1/Vr1)
+    alphaRel2 = np.arctan(VthetaRel2/Vr2)
+    beta1 = alphaRel1 + inletangle * np.pi/180
     Vrel1 = (Vr1**2 + Vtheta1**2)**0.5
-    Vrel2 = (Vr2**2 + Vtheta2**2)**0.5
-    return(Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2)
+    Vrel2 = Vr2/(np.cos(alphaRel2))
+    V1 = (Vr1)
+    V2 = (Vr2 ** 2 + Vtheta2 ** 2) ** 0.5
+    return(omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2)
 
 def bladenumber():
     # calculates minimum number of blades
@@ -128,14 +137,27 @@ def diffuserbladeplot(N, r1, r2, step, beta1, beta2):
     ax.grid(True)
     plt.show()
     return(r, theta)
+'''
+betas = np.arange(-1.5, 1.5, 0.1)
+omegas = []
+velratios = []
+for i in range(0, len(betas)):
+    beta2 = betas[i]
+    Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2 = velocitycalc()
+    N = bladenumber()
+    N = round(N * 1.25)
+    Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2 = velocitycalc(N) # recalculates values using a refined blade number
+    omegas.append(omega)
+    velratios.append(Vrel2/Vrel1)
+print(velratios)
 
-
-Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2 = velocitycalc()
+'''
+omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc()
 N = bladenumber()
 N = round(N * 1.25)
-Vr2, omega, Vtheta1, Vtheta2, Vr1, alphaRel1, beta1, Vrel1, Vrel2 = velocitycalc(N) # recalculates values using a refined blade number
-
+omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc(N) # recalculates values using a refined blade number
 bladeplot(N, r1, r2, step, beta1, beta2)
+print(omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2)
 
 r3 = r2 * vaneless
 Vr3 = Vr2 * r2/r3
