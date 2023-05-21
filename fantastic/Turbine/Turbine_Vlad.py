@@ -31,7 +31,7 @@ def interation(sigma, vr3, v03_actual,n):
 
 # Define blade number function
 def bladen(beta3, beta4, r3, r4, v03_actual):
-    beta = np.arctan((np.tan(beta3) + np.tan(beta4))*0.5)
+    beta = np.arctan((np.tan(beta3) + np.tan(-beta4))*0.5)
     r_mid = (r3 + r4)/2
     vrm = vradial(r_mid)
     wavg = vrm/np.cos(beta)
@@ -138,7 +138,7 @@ def angle_calc(n=0, beta3=0):
 
 
 beta3, beta4, v03_ideal, v03_actual, v04, alpha4 = angle_calc()
-n = 12
+n = bladen(beta3, beta4, r3, r4, v03_actual)
 beta3, beta4, v03_actual, v03_ideal, v04, alpha4 = angle_calc(n,beta3)
 
 # Stator Velocity Analysis
