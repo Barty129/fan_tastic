@@ -12,7 +12,7 @@ def v_radial(mdot, r, rho, h):
     v_r = mdot/(2 * np.pi * r * h * rho)
     return v_r
 
-def omega_opt(T_loss, eta_c, eta_t, eta_m0, vacuum_power_0, suction_box, dp_guess_comp,  V2_r, beta_2, r_2, sigma0, rho):
+def omega_opt(T_loss, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess_comp,  V2_r, beta_2, r_2, sigma0, rho):
     count2 = 0
     dh0_c = dh0(dp_guess_comp,rho,eta_c)
     power = vacuum_power_0
@@ -23,24 +23,18 @@ def omega_opt(T_loss, eta_c, eta_t, eta_m0, vacuum_power_0, suction_box, dp_gues
         d = (b**2) - (4*a*c)
         sol2 = (-b+cmath.sqrt(d))/(2*a)
         omega = np.real(sol2)
-        w_turbine, eta_m, eta_ov = omega_iterator(T_loss, eta_c, eta_t, eta_m0, power, omega)
+        w_turbine, eta_m, eta_ov = omega_calc(T_loss, eta_c, eta_t, power, omega)
         power = w_turbine * (1-eta_ov)/eta_t
-        dp_new_comp = suction_box*eta_ov/(1-eta_ov)
+        dp_new_comp = suction_box_rise*eta_ov/(1-eta_ov)
         dh0_c = dh0(dp_new_comp,rho,eta_c)
         count2 += 1
     return omega
     
-    
-
-def omega_iterator(T_loss, eta_c, eta_t, eta_m0, vacuum_power, omega_c):
+def omega_calc(T_loss, eta_c, eta_t, vacuum_power, omega_c):
     P_loss = T_loss * omega_c
-    eta_m = eta_m0
-    count = 0
-    while count < 10:
-        eta_ov = eta_c * eta_t * eta_m
-        w_turbine = vacuum_power * eta_t/(1-eta_ov)
-        eta_m = 1 - P_loss/w_turbine 
-        count += 1
+    eta_m = (vacuum_power*eta_t - P_loss)/(eta_t*(vacuum_power - (eta_c*P_loss)))
+    eta_ov = eta_t * eta_c * eta_m
+    w_turbine = vacuum_power * eta_t/(1-eta_ov)
     return w_turbine, eta_m, eta_ov
 
 

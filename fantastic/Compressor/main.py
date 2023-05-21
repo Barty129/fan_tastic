@@ -15,7 +15,7 @@ def main():
     # set parameters
     beta_2 = - 60 * deg
 
-    omega = fn.omega_opt(gb.T_loss, gb.eff_comp, gb.eff_turb, 0.9, gb.suction_power_start, \
+    omega = fn.omega_opt(gb.T_loss, gb.eff_comp, gb.eff_turb, gb.suction_power_start, \
                             gb.suction, gb.delta_p_comp_start, V2_r, beta_2, gb.r_2, gb.sigma_0, gb.rho)
 
     #Velocity triangle first pass
