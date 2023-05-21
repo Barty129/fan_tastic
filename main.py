@@ -7,23 +7,35 @@ import fantastic.turbomachinery as tm
 
 deg = 2 * np.pi / 360
 
+f_0 = 0.5 * (0.7 + 1)
+nu = 100 * 1e-6
+Cf = 0.0025
+d_m = 0.025
+rho = 1.205
+r_2 = 0.1
+r_1 = 0
+
 eff_c = 0.6
 eff_t = 0.65
 
-dp0_comp = 6250
-dp0_turb = -1780
-dp0_vac = 11560
+# dp0_comp = 6180
+# dp0_turb = -17740
+# dp0_vac = 11560
 mdot = 0.0623
+density = 1.204675848
+
+W_VAC_MAX = 597.6087961307821
 
 
-def main():
+def main(rpm):
+    w = rpm * 2 * np.pi / 60
     # DATA INPUT
     # inlet and outlet nodes
     inlet = tm.Node(101325, 293, 287)
     outlet = tm.Node(101325, 293, 287)
 
     # compressor blade rows (doesn't matter for now)
-    com_rotor = tm.BladeRow(bi=0, bo=0, ri=0.060, ro=0.100, N=10)
+    com_rotor = tm.BladeRow(bi=0, bo=0, ri=0.025, ro=0.100, N=10)
     com_stator = tm.BladeRow(bi=0, bo=0, ri=0.110, ro=0.200, N=10)
 
     # turbine blade rows (doesn't matter for now)
@@ -40,12 +52,11 @@ def main():
     rig.add_to_shaft(idxs=[0, 1])
 
     # COMPRESSOR DESIGN [notation: V_{(r)adial or (t)angential}_{(r)otor or (s)tator}{(i)nlet or (o)utlet}]
-    dh0 = dp0_comp / inlet.density / eff_c
+    dh0 = tm.dp0(w) / inlet.density / eff_c
     V_r_ri = mdot / 2 / np.pi / inlet.density / com.rotor.ri / com.h
     V_r_ro = mdot / 2 / np.pi / inlet.density / com.rotor.ro / com.h
 
     # solve quadratic for bo from omega
-    w = 8100 * 2 * np.pi / 60
 
     def f(bo):
         return Polynomial(
@@ -53,7 +64,7 @@ def main():
         ).roots()[1] - w
 
     # set parameters
-    com.rotor.bo = scipy.optimize.root_scalar(f, bracket=(0.01 - np.pi / 2, np.pi / 2 - 0.01)).root
+    com.rotor.bo = scipy.optimize.root_scalar(f, bracket=(0.001 - np.pi / 2, np.pi / 2 - 0.001)).root
     rig.shaft.omega = f(com.rotor.bo) + w
 
     # find rotor vels
@@ -64,14 +75,13 @@ def main():
     W_ri = np.sqrt(V_r_ri ** 2 + U_ri ** 2)
     W_ro = np.sqrt(V_r_ro ** 2 + (V_t_ro - U_ro) ** 2)
 
-    print(V_t_ro, U_ro, V_r_ro, W_ro)
-
     # find bi: beta_in = (alpha_in-5deg) as per handout
+    # com.rotor.bi = np.arctan(U_ri / V_r_ri) - 5 * deg
     com.rotor.bi = np.arctan(U_ri / V_r_ri) - 5 * deg
-    # com.rotor.bi = np.arctan(-U_ri / V_r_ri) + 5 * deg
 
     # rule of thumb
-    print(W_ro / W_ri > 1 / 3)
+    print(f'W_ro / W_ri > 1 / 3: {W_ro / W_ri > 1 / 3}')
+    print(f'backsweep: {V_t_ro < U_ro}, {com.rotor.bo>0}')
 
     # results are ok to show!
     print(f'beta_1: {com.rotor.bi / deg:.2f}deg')
@@ -80,10 +90,7 @@ def main():
 
     # now for blade numbers
     # first get blade profile for constant deltaP across blade
-    r = np.linspace(com.rotor.ri, com.rotor.ro, 100)
-    c1 = 2 * (np.tan(com.rotor.bo) - np.tan(com.rotor.bi)) / (com.rotor.ro ** 2 - com.rotor.ri ** 2)
-    c2 = np.tan(com.rotor.bi) - c1 * com.rotor.ri ** 2
-    b = np.arctan(c1 / 2 * r ** 2 + c2)
+    b = tm.rotor_shape(com.rotor)
     # vels
     V_r_r = mdot / 2 / np.pi / inlet.density / r / com.h
     V_t_r = w * r + V_r_r * np.tan(b)
@@ -93,6 +100,7 @@ def main():
     Nb_min = mdot * drVt_dr(r) / (2 * inlet.density * W_r ** 2 * r * com.h)
 
     Nb = int(np.ceil(1.25 * np.max(Nb_min)))
+    com.rotor.N = Nb
     print(f'num. compressor blades: {Nb}')
 
     for i in range(Nb):
@@ -103,4 +111,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(8930)

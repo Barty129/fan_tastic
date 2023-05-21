@@ -24,8 +24,9 @@ def p_loss(omega):
     return (2 * M_0 + 4 * T_w) * omega
 
 
+
 def main(rpm):
-    omega = rpm*2*np.pi/60
+    omega = rpm * 2 * np.pi / 60
     suction_df = pd.read_csv("../../prelims/suction-chics.csv")
     inlet_dp = -suction_df["Water Gauge /kPa"] * 1000
     vac_dp = -suction_df["Mercury Gauge /kPa"] * 1000
@@ -50,7 +51,7 @@ def main(rpm):
     print('AT MAX PERFORMANCE:')
     print(f'    Mass flow: {mdot_W_vac_max:.4f}kg/s')
     print(f'    Suction: {W_vac_max * DENSITY / mdot_W_vac_max / 1000:.2f}kPa ({W_vac_max:.2f}W)')
-    print(f'    Compresor pressure rise: '
+    print(f'    Compressor pressure rise: '
           f'{W_c_max * EFF_C * DENSITY / mdot_W_vac_max / 1000:.2f}kPa')
     print(f'    Turbine pressure drop: {W_t_max / EFF_T * DENSITY / mdot_W_vac_max / 1000:.2f}kPa')
     print(f'    Overall efficiency: {eff_mech_max * EFF_C * EFF_T:.4f}')
