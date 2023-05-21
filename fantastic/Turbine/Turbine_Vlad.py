@@ -1,32 +1,27 @@
 import matplotlib.pyplot as plt 
 import numpy as np
 
-# Define input variables
+# Design point
 rho = 1.2046 #kg/m^3
-h = 12 *10**(-3) #blade heigh in m [12 mm]
-#omega = 8000 * 2*np.pi/60 #Taken from compresor calculations, same shaft
+h = 12 *10**(-3) #[mm]
 etha_t = 0.65 
 etha_mech = 0.899894 
 del_p_t = 18260 #[kPa]
-del_p_c = 6410
 m_dot = 0.061 # [kg/m^3]
-r3 = 10*10**(-2) #radius at turbine rotor exit [10 cm], measured
-r4 = 45 * 10**(-3) #minimum radius is 50 mm as the blades will protude into the exhaust chamber
+r3 = 10*10**(-2) #[cm]
+r4 = 60* 10**(-3) #minimum radius is 50 mm as the blades will protude into the exhaust chamber
 
 # Get vtheta and omega, matching with compressor calculations
-Vtheta2 = 85.2651560166644
-v03_actual = Vtheta2/etha_mech
-omega = 1053.211292599318
+omega = 1008
+dh0 = etha_t*del_p_t/rho
 
-# Define radial velocity function
+# Define radial velocity function for turbine
 def vradial(r):
     return - m_dot/(2*np.pi*rho*r*h)
 
 # Define function for sigma and beta iteration given n
-def getsig(n, v03_actual, vr3, r3, omega):
-    sigma = 0.85 #initial guess
+def interation(sigma, vr3, v03_actual,n):
     sigma_1 = 0
-
     while round(sigma_1,4) != round(sigma,4):
         v03_ideal = (1-sigma)*(omega*r3) + v03_actual
         beta3 = np.arctan((v03_ideal-omega*r3)/vr3)
@@ -50,7 +45,7 @@ def bladen(beta3, beta4, r3, r4, v03_actual):
 def bshape(beta3, beta4, r3, r4):
     # Find metal angles variation with radius
     c1 = 2*(np.tan(beta4)-np.tan(beta3))/(r4**2-r3**2)
-    c2 = np.tan(beta3)-c1*r3**2/2
+    c2 = np.tan(beta4)-c1*r4**2/2
     print('tan(\u03B2) = {} r^2 + {}'.format(c1/2,c2))
 
     # Define radius and beta vectors
@@ -64,8 +59,7 @@ def plot_turbine(n, beta3, beta4, r3, r4, ns, beta33, beta2, r33, r2):
     print('Rotor')
     c1r, c2r, rr = bshape(beta3, beta4, r3, r4)
 
-    thetar = c1r*rr**2/4 + c2r*np.log(rr)
-    thetar = (thetar - thetar[0])/2
+    thetar = c1r*(rr**2-r4**2)/4 + c2r*np.log(rr/r4)
 
     plt.subplots(subplot_kw={'projection': 'polar'})
     
@@ -77,13 +71,11 @@ def plot_turbine(n, beta3, beta4, r3, r4, ns, beta33, beta2, r33, r2):
     # Plot stator
     print('Stator')
     c1s, c2s, rs = bshape(beta2, beta33, r2, r33)
-    thetas = c1s*rs**2/4 + c2s*np.log(rs)
-    thetas = (thetas - thetas[0])/4
+    thetas = c1s*(rs**2-r33**2)/4 + c2s*np.log(rs/r33)
     
     for i in range(ns):
-        theta_i = thetas + i*2*np.pi/ns
+        theta_i = thetas/5 + i*2*np.pi/ns
         plt.plot(theta_i, rs, c = "r")
-    plt.grid(True)
 
     # Show rotor/stator exit an inlet
     circle = np.linspace(0,2*np.pi,1000)
@@ -93,6 +85,7 @@ def plot_turbine(n, beta3, beta4, r3, r4, ns, beta33, beta2, r33, r2):
     stator_out = r2*np.ones(len(circle))
     plt.plot(circle,radius,"--", color = "black")
     plt.plot(circle,radius_out,"--", c = 'black')
+    plt.title("Turbine design")
     plt.plot(circle,stator_in,"--", c = 'black')
     plt.plot(circle,stator_out,"--", c = 'black')
     plt.show()
@@ -122,14 +115,18 @@ def angle_calc(n=0, beta3=0):
     v04 = 0
     vr3 = vradial(r3)
     vr4 = vradial(r4)
+    v03_actual = dh0/(omega*r3)
     
     if n == 0:
         n = 15 #initial guess
-        sigma, beta3, v03_ideal = getsig(n,v03_actual, vr3, r3, omega)
-    else:
-        sigma, beta3, v03_ideal = getsig(n,v03_actual, vr3, r3, omega)
+        sigma = 0.85 #initial guess
+        sigma, beta3, v03_ideal = interation(sigma,vr3,v03_actual,n)
 
-    alpha4 = np.arctan(omega*r4/vr4)
+    else:
+        sigma = 1 - ((np.cos(beta3))**(0.5))/(n**0.7)
+        sigma, beta3, v03_ideal = interation(sigma,vr3,v03_actual,n)
+
+    alpha4 = np.arctan(-omega*r4/vr4) 
     beta4 = alpha4 - 5*np.pi/180 #3D flow calculation suggests beta4 is 5 degrees more negative than alpha4,rel
     #this angle deviation slip will be lower if more blades are used
      
@@ -139,12 +136,9 @@ def angle_calc(n=0, beta3=0):
 
     return beta3, beta4, v03_ideal, v03_actual, v04, alpha4
 
-# Define function to get number of stator baldes
-
 
 beta3, beta4, v03_ideal, v03_actual, v04, alpha4 = angle_calc()
-n = 15
-n = bladen(beta3, beta4, r3, r4, v03_actual)
+n = 12
 beta3, beta4, v03_actual, v03_ideal, v04, alpha4 = angle_calc(n,beta3)
 
 # Stator Velocity Analysis
@@ -171,6 +165,6 @@ print("Stator blades number {}".format(ns))
 
 rr, thetar, rs, thetas = plot_turbine(n, beta3, beta4, r3, r4, ns, beta33, beta2, r33, r2)
 
-# Throat area
+# Throat area check
 print(n*throat(rr,thetar))
 print(2*np.pi*r4*np.cos(alpha4))
