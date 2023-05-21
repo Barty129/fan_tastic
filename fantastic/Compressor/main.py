@@ -3,64 +3,81 @@ import globals as gb
 import functions as fn
 import scipy
 from matplotlib import pyplot as plt
+import cmath
 
 def main():
-    dh0_comp = fn.dh0(gb.delta_p_comp,gb.rho,gb.eff_comp)
     V1_r = fn.v_radial(gb.m_dot, gb.r_1, gb.rho, gb.blade_height)
     V2_r = fn.v_radial(gb.m_dot, gb.r_2, gb.rho, gb.blade_height)
 
     # set parameters
     deg = np.pi/180
 
-    omega_0 = 8000 * 2 * np.pi / 60
-
     # set parameters
-    beta_2 = scipy.optimize.root_scalar(fn.omega_opt, args=(V1_r, gb.r_2, gb.sigma_0, dh0_comp, omega_0) , bracket=(0.01 - np.pi / 2, np.pi / 2 - 0.01)).root
-    omega = fn.omega_opt(beta_2, V1_r, gb.r_2, gb.sigma_0, dh0_comp, 0) 
+    beta_2 = - 60 * deg
 
-    v2_theta = fn.euler(dh0_comp, omega, gb.r_1, gb.r_2, gb.v1_theta)
-    Ub_1 = omega * gb.r_1
-    Ub_2 = omega * gb.r_2
-    # Calculate relative velocities
-    v1_t_rel = np.sqrt(V1_r ** 2 + Ub_1 ** 2)
-    v2_t_rel = np.sqrt(V2_r ** 2 + (v2_theta - Ub_2) ** 2)
+    omega = fn.omega_opt(gb.T_loss, gb.eff_comp, gb.eff_turb, 0.9, gb.suction_power_start, \
+                            gb.suction, gb.delta_p_comp_start, V2_r, beta_2, gb.r_2, gb.sigma_0, gb.rho)
 
-    # find bi: beta_in = (alpha_in-5deg) as per handout
-    if np.arctan(-Ub_1 / V1_r) >= 0:
-        beta_1 = np.arctan(-Ub_1 / V1_r) - 5 * deg
-    else:
-        beta_1 = np.arctan(-Ub_1 / V1_r) + 5 * deg
-
-    #De Haller test
-    if v2_t_rel/v1_t_rel < 1/3:
-        text = 'This is not valid'
-        print(text)
-    else:
-        print('beta_1 = {} deg'.format(beta_1/deg))
-        print('beta_2 = {} deg'.format(beta_2/deg))
-        print('omega = {} rpm'.format(omega * 60/(2*np.pi)))
+    #Velocity triangle first pass
+    beta_1, v2_theta, v1_rel, v2_rel, sigma1 = fn.velocity2_triangles(gb.r_1, gb.r_2, V1_r, V2_r, beta_2, omega, 0)
     
     # Calculate blade numbers, using midpoint analysis
     r_mid = 0.5*(gb.r_1 + gb.r_2)
-    r_diff = 0.5 * (gb.r_2 - gb.r_1)
-    r_mid_vals = np.linspace((r_mid - 0.3*r_diff), (r_mid + 0.3*r_diff), 100)
-    V_r_vals = fn.v_radial(gb.m_dot, r_mid_vals, gb.rho, gb.blade_height)
+    V_r_mid = fn.v_radial(gb.m_dot, r_mid, gb.rho, gb.blade_height)
 
     c1_mid = 2*(np.tan(beta_2) - np.tan(beta_1)) / (gb.r_2 ** 2 - gb.r_1 ** 2)
     c2_mid = np.tan(beta_1) - c1_mid * gb.r_1 ** 2
-    beta_mid_vals = np.arctan(c1_mid/2 * r_mid_vals ** 2 + c2_mid)
+    beta_mid = np.arctan(c1_mid/2 * r_mid ** 2 + c2_mid)
 
-    V_theta_vals = (omega * r_mid_vals) + (V_r_vals * np.tan(beta_mid_vals))
-    W_av_vals = V_r_vals/np.cos(beta_mid_vals)
-    dvthetdr = scipy.interpolate.InterpolatedUnivariateSpline(r_mid_vals, r_mid_vals * V_theta_vals).derivative(1)
+    V_theta_vals = (omega * r_mid) + (V_r_mid * np.tan(beta_mid))
+    W_av = V_r_mid/np.cos(beta_mid)
+    dvthetdr = ((v2_theta * gb.r_2) - (gb.v1_theta * gb.r_1))/(gb.r_2 - gb.r_1)
 
-    Nb_min = gb.m_dot * dvthetdr(r_mid_vals) / (2 * gb.rho * r_mid_vals * gb.blade_height * (W_av_vals**2))
+    Nb_min = gb.m_dot * dvthetdr / (2 * gb.rho * r_mid * gb.blade_height * (W_av**2))
     Nb = np.ceil(1.25 * np.max(Nb_min))
+    Nb = int(Nb)
     print('No. Blades = {}'.format(Nb))
 
-    fn.rotor_plot(gb.r_1, gb.r_2, beta_1, beta_2, 0.001)
+    #Velocity triangle second pass
+    beta_1, v2_theta, v1_rel, v2_rel, sigma2 = fn.velocity2_triangles(gb.r_1, gb.r_2, V1_r, V2_r, beta_2, omega, Nb)
+    print('beta_1 = {} deg'.format(beta_1/deg))
+    print('beta_2 = {} deg'.format(beta_2/deg))
+    print('omega = {} rpm'.format(omega * 60/(2*np.pi)))
+    print('sigma = {}'.format(sigma2))
+    
+    fn.rotor_plot(gb.r_1, gb.r_2, beta_1, beta_2, 0.001, Nb)
 
+    #Stator design
     r_3 = gb.r_2 * gb.G_val
+    v3_theta = (gb.r_2 * v2_theta)/r_3
+    v3_r = fn.v_radial(gb.m_dot, r_3, gb.rho, gb.blade_height)
+    beta_3 = np.arctan(v3_theta/v3_r)
+    N_diff = 18
+    deltab =  12 * deg
+    beta_4 = beta_3 - deltab
+
+    rdiff, thetadiff = fn.stator_blades(r_3, gb.r_4, 0.001, beta_3, beta_4, N_diff)
+    (throat_min, index_1, theta_off) = fn.throat_dist(N_diff, thetadiff, rdiff, gb.blade_height, gb.r_4, 0)
+    (throat_max, index_2, theta_off) = fn.throat_dist(N_diff, thetadiff, rdiff, gb.blade_height, gb.r_4, 1)
+    thickness = 0.5E-3
+    throat_min = throat_min - (thickness*gb.blade_height)
+    area_ratio = throat_max/throat_min
+    # blade_len2 = ((rdiff[index_2[0]] * np.cos(theta_off[index_2[0]])) - (rdiff[-1] * np.cos(theta_off[-1])))**2 + \
+    #     ((rdiff[index_2[0]] * np.sin(theta_off[index_2[0]])) - (rdiff[-1] * np.sin(theta_off[-1])))**2
+    # bladelen = np.sqrt(blade_len2)
+
+    # length_ratio = bladelen*gb.blade_height/throat_min
+
+    div_angle = 360/N_diff
+
+
+
+    print('beta_3 = {} deg'.format(beta_3/deg))
+    print('beta_4 = {} deg'.format(beta_4/deg))
+    print('Area ratio = {}'.format(area_ratio))
+    print(div_angle)
+    # print('Length ratio = {}'.format(length_ratio))
+
 
 if __name__ == "__main__":
     main()
