@@ -54,8 +54,6 @@ def rotor_plot(r_1, r_2, beta1, beta2, step, Nb):
     for i in range(Nb):
         theta_plot = theta + (i * 2 *np.pi/Nb)
         ax.plot(theta_plot, r_val, 'blue')
-    plt.yticks([])
-    plt.ylim(0, None)
     plt.show()
 
 def velocity2_triangles(r1, r2, v1_r, v2_r, beta2, omega, Nb=0):
@@ -63,7 +61,7 @@ def velocity2_triangles(r1, r2, v1_r, v2_r, beta2, omega, Nb=0):
     if Nb == 0:
         sigma = 0.85
     else:
-        sigma = 1 - (np.sqrt(np.cos(beta2))/(Nb**(1/7)))
+        sigma = 1 - (np.sqrt(np.cos(beta2))/(Nb**(0.7)))
     v2_thet = (omega*r2*sigma) + v2_r*np.tan(beta2)
 
     Ub_1 = omega * r1
@@ -72,9 +70,9 @@ def velocity2_triangles(r1, r2, v1_r, v2_r, beta2, omega, Nb=0):
     v1_rel = np.sqrt(v1_r ** 2 + Ub_1 ** 2)
     v2_rel = np.sqrt(v2_r ** 2 + (v2_thet - Ub_2) ** 2)
     if np.arctan(-Ub_1 / v1_r) >= 0:
-        beta1 = np.arctan(-Ub_1 / v1_r) - 5 * deg
+        beta1 = np.arctan(-Ub_1 / v1_r) - gb.inlet_angle * deg
     else:
-        beta1 = np.arctan(-Ub_1 / v1_r) + 5 * deg
+        beta1 = np.arctan(-Ub_1 / v1_r) + gb.inlet_angle * deg
 
     #De Haller test
     if v2_rel/v1_rel < 1/3:
@@ -117,6 +115,7 @@ def throat_dist(N_diff, thetadiff, rdiff, blade_h, r_ext, min=0):
         # ax.plot(thetadiff, rdiff, 'blue')
         # ax.plot(thetadiff_2, rdiff, 'blue')
         # ax.scatter(thetadiff_2[index[0]], rdiff[index[0]])
+        # ax.scatter(thetadiff[index[1]], rdiff[index[1]])
     else:
         Distance = 1E5
         for j in range(len(rdiff)):
