@@ -24,7 +24,6 @@ def p_loss(omega):
     return (2 * M_0 + 4 * T_w) * omega
 
 
-
 def main(rpm):
     omega = rpm * 2 * np.pi / 60
     suction_df = pd.read_csv("../../prelims/suction-chics.csv")
@@ -40,13 +39,13 @@ def main(rpm):
     mdot_W_vac_max = np.max(np.polyder(W_vac_fit).roots)
     W_vac_max = W_vac_fit(mdot_W_vac_max)
 
+    # omega = np.linspace(6000, 11000, 1000) * np.pi / 30
     eff_mech_max = (W_vac_max - p_loss(omega) / EFF_T) / (W_vac_max - p_loss(omega) * EFF_C)
     W_t_max = (EFF_T * W_vac_max) / (1 - eff_mech_max * EFF_C * EFF_T)
     W_c_max = eff_mech_max * W_t_max
 
     F = W_c_max / W_vac_max
 
-    print(W_c_max, W_vac_max, W_t_max, eff_mech_max)
 
     print('AT MAX PERFORMANCE:')
     print(f'    Mass flow: {mdot_W_vac_max:.4f}kg/s')
@@ -56,13 +55,15 @@ def main(rpm):
     print(f'    Turbine pressure drop: {W_t_max / EFF_T * DENSITY / mdot_W_vac_max / 1000:.2f}kPa')
     print(f'    Overall efficiency: {eff_mech_max * EFF_C * EFF_T:.4f}')
     print(f'    F: {F:.4f}')
-
+    # plt.plot(omega*30/np.pi,F)
     plt.plot(mdot, W_vac, 'x', label='$\\dot{W}_v$ (data)')
     plt.plot(mdot, W_vac_fit(mdot), label='$\\dot{W}_v$ (fit)')
     plt.vlines(mdot_W_vac_max, 0, 700, 'r')
     plt.hlines(W_vac_max, 0, 0.10, 'r')
     plt.ylabel('Suction Power, W')
     plt.xlabel('Mass flow, kg/s')
+
+    plt.plot()
     plt.ylim(0, None)
     plt.xlim(0, None)
     plt.show()
