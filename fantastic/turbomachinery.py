@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.integrate import quad
 
 
 @dataclass
@@ -31,7 +32,35 @@ class BladeRow:
     ri: float
     ro: float
     N: int
+
     sigma: float = 0.85
+
+    c1: float = 0
+    c2: float = 0
+    c3: float = 0
+
+    @property
+    def chord(self):
+        def f(r):
+            return np.sqrt(1 + (self.c1 * r ** 2 / 2 + self.c3 * r + self.c2) ** 2)
+
+        return quad(f, self.ri, self.ro)[0]
+
+    def b(self, r):
+        return np.arctan(self.c1 * r ** 2 / 2 + self.c3 * r + self.c2)
+
+    def theta(self, r, rotor=True):
+        if rotor:
+            return self.c1 * r ** 2 / 4 + self.c3 * r + self.c2 * np.log(r)
+        else:
+            return np.array([quad(lambda x: np.tan(self.bi + (x - self.ri) * (self.bo - self.bi) / (self.ro - self.ri)) / x,
+                                  self.ri,
+                                  r_i
+                                  )[0] for r_i in r])
+
+    def generate_rotor(self):
+        self.c1 = 2 * (np.tan(self.bi) - np.tan(self.bo)) / (self.ri ** 2 - self.ro ** 2)
+        self.c2 = np.tan(self.bi) - self.c1 * self.ri ** 2 / 2
 
 
 class Turbomachine:
@@ -132,12 +161,3 @@ def dh0(omega, eff_t=0.65, eff_c=0.6, W_vac_max=597.6087961307821, mdot=0.0623):
     W_t_max = (eff_t * W_vac_max) / (1 - eff_mech * eff_c * eff_t)
     W_c_max = eff_mech * W_t_max
     return W_c_max / mdot, W_t_max / mdot
-
-
-def rotor_shape(rotor: BladeRow):
-    r = np.linspace(rotor.ri, rotor.ro, 100)
-    c1 = 2 * (np.tan(rotor.bi) - np.tan(rotor.bo)) / (rotor.ri ** 2 - rotor.ro ** 2)
-    c2 = np.tan(rotor.bi) - c1 * rotor.ri ** 2 / 2
-    b = np.arctan(c1 * r ** 2 / 2 + c2)
-    theta = c1 * r ** 2 / 4 + c2 * np.log(r)
-    return r, b, theta

@@ -90,7 +90,7 @@ def main(rpm):
 
     # now for blade numbers
     # first get blade profile for constant deltaP across blade
-    b = tm.rotor_shape(com.rotor)
+    b = tm.shape_rotor(com.rotor)
     # vels
     V_r_r = mdot / 2 / np.pi / inlet.density / r / com.h
     V_t_r = w * r + V_r_r * np.tan(b)
