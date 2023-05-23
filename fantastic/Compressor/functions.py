@@ -16,7 +16,7 @@ def omega_opt(T_loss, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess_c
     count2 = 0
     dh0_c = dh0(dp_guess_comp,rho,eta_c)
     power = vacuum_power_0
-    while count2 < 30:
+    while count2 < 10:
         a = sigma0 * (r_2**2)
         b = V2_r * (r_2 ** 2) * np.tan(beta_2)
         c = -dh0_c
@@ -24,7 +24,6 @@ def omega_opt(T_loss, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess_c
         sol2 = (-b+cmath.sqrt(d))/(2*a)
         omega = np.real(sol2)
         w_turbine, eta_m, eta_ov = omega_calc(T_loss, eta_c, eta_t, power, omega)
-        power = w_turbine * (1-eta_ov)/eta_t
         dp_new_comp = suction_box_rise*eta_ov/(1-eta_ov)
         dh0_c = dh0(dp_new_comp,rho,eta_c)
         count2 += 1
@@ -37,17 +36,12 @@ def omega_calc(T_loss, eta_c, eta_t, vacuum_power, omega_c):
     w_turbine = vacuum_power * eta_t/(1-eta_ov)
     return w_turbine, eta_m, eta_ov
 
-
-def beta_mid(beta_1, beta_2):
-    beta_mid = np.arctan(0.5*(np.arctan(beta_1) + np.arctan(beta_2)))
-    return beta_mid
-
 def rotor_plot(r_1, r_2, beta1, beta2, step, Nb):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     r_val = np.arange(r_1, r_2, step)
     theta = np.zeros(len(r_val))
     c1 = (np.tan(beta1) - np.tan(beta2))/(r_1**2/2 - r_2**2/2)
-    c2 = np.tan(beta2) - c1 * r_2 ** 2/2
+    c2 = np.tan(beta2) - c1/2 * r_2 ** 2
     b = np.arctan(c1/2 * r_val ** 2 + c2)
     for j in range(1, len(r_val)):
         theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
@@ -70,15 +64,15 @@ def velocity2_triangles(r1, r2, v1_r, v2_r, beta2, omega, Nb=0):
     v1_rel = np.sqrt(v1_r ** 2 + Ub_1 ** 2)
     v2_rel = np.sqrt(v2_r ** 2 + (v2_thet - Ub_2) ** 2)
     if np.arctan(-Ub_1 / v1_r) >= 0:
-        beta1 = np.arctan(-Ub_1 / v1_r) - gb.inlet_angle * deg
+        beta1 = np.arctan(-Ub_1 / v1_r) - gb.inlet_angle_rotor * deg
     else:
-        beta1 = np.arctan(-Ub_1 / v1_r) + gb.inlet_angle * deg
+        beta1 = np.arctan(-Ub_1 / v1_r) + gb.inlet_angle_rotor * deg
 
     #De Haller test
     if v2_rel/v1_rel < 1/3:
-        text = 'WhhhAaaT'
+        text = 'Invalid selection'
         print(text)
-    return(beta1, v2_thet, v1_rel, v2_rel, sigma)
+    return(beta1, v2_thet, v1_rel, v2_rel)
 
 def stator_blades(r_3, r_4, step, beta_3, beta_4, Nblade):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
@@ -132,3 +126,12 @@ def throat_dist(N_diff, thetadiff, rdiff, blade_h, r_ext, min=0):
     # plt.ylim(0, None)
     # plt.show()
     return(area, index, thetadiff_2)
+
+def blade_length(r_array, theta_array, index_start):
+    xs = r_array * np.cos(theta_array)
+    ys = r_array * np.sin(theta_array)
+    blade_length = 0
+    for i in np.arange(index_start,len(r_array)-1):
+        dr = np.sqrt((xs[i+1] - xs[i])**2 + (ys[i+1] - ys[i])**2)
+        blade_length += dr
+    return blade_length
