@@ -46,8 +46,7 @@ def main():
     print('omega = {} rpm'.format(omega * 60/(2*np.pi)))
     print('sigma = {}'.format(sigma2))
 
-    
-    fn.rotor_plot(gb.r_1, gb.r_2, beta_1, beta_2, step, Nb)
+    r_rot, theta_rot = fn.blades_plot(gb.r_1, gb.r_2, beta_1, beta_2, step)
 
     #Stator design
     r_3 = gb.r_2 * gb.G_val
@@ -55,9 +54,9 @@ def main():
     v3_r = fn.v_radial(gb.m_dot, r_3, gb.rho, gb.blade_height)
     beta_3 = np.arctan(v3_theta/v3_r) - gb.inlet_angle_diff * deg
 
-    rdiff, thetadiff = fn.stator_blades(r_3, gb.r_4, step, beta_3, gb.beta_4, gb.N_diff)
-    (throat_min, index_1, theta_off) = fn.throat_dist(gb.N_diff, thetadiff, rdiff, gb.blade_height, gb.r_4, 0)
-    (throat_max, index_2, theta_off) = fn.throat_dist(gb.N_diff, thetadiff, rdiff, gb.blade_height, gb.r_4, 1)
+    rdiff, thetadiff = fn.stator_blades(r_3, gb.r_4, beta_3, gb.beta_4, step)
+    (throat_min, index_1) = fn.throat_dist(gb.N_diff, thetadiff, rdiff, gb.blade_height, gb.r_4, 0)
+    (throat_max, index_2) = fn.throat_dist(gb.N_diff, thetadiff, rdiff, gb.blade_height, gb.r_4, 1)
     throat_min = (throat_min - (gb.thickness*gb.blade_height)) #*0.95 For boundary layers
     area_ratio = throat_max/throat_min
 
@@ -69,6 +68,43 @@ def main():
     print('beta_4 = {} deg'.format(gb.beta_4/deg))
     print('Area ratio = {}'.format(area_ratio))
     print('Diffuser Angle = {}'.format(diffuser_angle/deg))
+
+
+    file = open("Rot15.txt","w+")
+    theta_plot = theta_rot + (14*2*np.pi)/int(Nb)
+    for j in range(len(r_rot)):
+        x = r_rot[j] * np.cos(theta_plot[j])
+        y = r_rot[j] * np.sin(theta_plot[j])
+        z = 0
+        file.write(str(x))
+        file.write(',')
+        file.write(str(y))
+        file.write(',')
+        file.write(str(z))
+        file.write('\n')
+    file.close()
+
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+    angle = np.linspace(0,2*np.pi,1000)
+    r1_array = gb.r_1*np.ones(len(angle))
+    r2_array = gb.r_2*np.ones(len(angle))
+    plt.plot(angle,r1_array,"--", c = 'black')
+    plt.plot(angle,r2_array,"--", c = 'black')
+    for i in range(gb.N_diff):
+        theta_plot = thetadiff + (i * 2 *np.pi/gb.N_diff)
+        ax.plot(theta_plot, rdiff, 'blue')
+    for i in range(Nb):
+        theta_plot = theta_rot + (i * 2 *np.pi/Nb)
+        ax.plot(theta_plot, r_rot, 'red')
+    r3_array = r_3*np.ones(len(angle))
+    r4_array = gb.r_4*np.ones(len(angle))
+    plt.plot(angle,r3_array,"--", c = 'black')
+    plt.plot(angle,r4_array,"--", c = 'black')
+    plt.yticks([])
+    plt.ylim(0, None)
+    plt.show()
+
+
 
 if __name__ == "__main__":
     main()

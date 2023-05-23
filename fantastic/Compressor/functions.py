@@ -12,10 +12,11 @@ def v_radial(mdot, r, rho, h):
     v_r = mdot/(2 * np.pi * r * h * rho)
     return v_r
 
-def omega_opt(T_loss, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess_comp,  V2_r, beta_2, r_2, sigma0, rho):
+def omega_opt(T_loss_0, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess_comp,  V2_r, beta_2, r_2, sigma0, rho):
     count2 = 0
     dh0_c = dh0(dp_guess_comp,rho,eta_c)
     power = vacuum_power_0
+    T_loss = T_loss_0
     while count2 < 10:
         a = sigma0 * (r_2**2)
         b = V2_r * (r_2 ** 2) * np.tan(beta_2)
@@ -26,6 +27,8 @@ def omega_opt(T_loss, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess_c
         w_turbine, eta_m, eta_ov = omega_calc(T_loss, eta_c, eta_t, power, omega)
         dp_new_comp = suction_box_rise*eta_ov/(1-eta_ov)
         dh0_c = dh0(dp_new_comp,rho,eta_c)
+        I_discs = 0.002456
+        T_loss = (omega * 0.0348) * I_discs
         count2 += 1
     return omega
     
@@ -35,20 +38,6 @@ def omega_calc(T_loss, eta_c, eta_t, vacuum_power, omega_c):
     eta_ov = eta_t * eta_c * eta_m
     w_turbine = vacuum_power * eta_t/(1-eta_ov)
     return w_turbine, eta_m, eta_ov
-
-def rotor_plot(r_1, r_2, beta1, beta2, step, Nb):
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    r_val = np.arange(r_1, r_2, step)
-    theta = np.zeros(len(r_val))
-    c1 = (np.tan(beta1) - np.tan(beta2))/(r_1**2/2 - r_2**2/2)
-    c2 = np.tan(beta2) - c1/2 * r_2 ** 2
-    b = np.arctan(c1/2 * r_val ** 2 + c2)
-    for j in range(1, len(r_val)):
-        theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
-    for i in range(Nb):
-        theta_plot = theta + (i * 2 *np.pi/Nb)
-        ax.plot(theta_plot, r_val, 'blue')
-    plt.show()
 
 def velocity2_triangles(r1, r2, v1_r, v2_r, beta2, omega, Nb=0):
     deg = np.pi/180
@@ -74,26 +63,27 @@ def velocity2_triangles(r1, r2, v1_r, v2_r, beta2, omega, Nb=0):
         print(text)
     return(beta1, v2_thet, v1_rel, v2_rel)
 
-def stator_blades(r_3, r_4, step, beta_3, beta_4, Nblade):
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+def blades_plot(r_1, r_2, beta1, beta2, step):
+    r_val = np.arange(r_1, r_2, step)
+    theta = np.zeros(len(r_val))
+    c1 = (np.tan(beta1) - np.tan(beta2))/(r_1**2/2 - r_2**2/2)
+    c2 = np.tan(beta2) - c1/2 * r_2 ** 2
+    b = np.arctan(c1/2 * r_val ** 2 + c2)
+    for j in range(1, len(r_val)):
+        theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
+    return(r_val, theta)   
+
+def stator_blades(r_3, r_4, beta_3, beta_4, step):
     # plots diffuser blade shapes
     r_val = np.arange(r_3, r_4, step)
     theta = np.zeros(len(r_val))
     b = beta_3 + (beta_4 - beta_3) * (r_val - r_3)/(r_4 - r_3)
     for j in range(1, len(r_val)):
         theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
-    for i in range(Nblade):
-        theta_plot = theta + (i * 2 *np.pi/Nblade)
-        ax.plot(theta_plot, r_val, 'blue')
-    plt.polar(theta, r_val, 'black')
-    plt.yticks([])
-    plt.ylim(0, None)
-    plt.show()
-    return(r_val, theta)
+    return(r_val, theta) 
 
 def throat_dist(N_diff, thetadiff, rdiff, blade_h, r_ext, min=0):
     #Computes minimum for min = 1, max otherwise
-    # fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     thetadiff_2 = thetadiff + (2*np.pi/N_diff)
     r_1 = rdiff * [np.cos(thetadiff), np.sin(thetadiff)]
     r_2 = rdiff * [np.cos(thetadiff_2), np.sin(thetadiff_2)]
@@ -106,10 +96,6 @@ def throat_dist(N_diff, thetadiff, rdiff, blade_h, r_ext, min=0):
                 if dist < Distance:
                     Distance = dist
                     index = [i, j]
-        # ax.plot(thetadiff, rdiff, 'blue')
-        # ax.plot(thetadiff_2, rdiff, 'blue')
-        # ax.scatter(thetadiff_2[index[0]], rdiff[index[0]])
-        # ax.scatter(thetadiff[index[1]], rdiff[index[1]])
     else:
         Distance = 1E5
         for j in range(len(rdiff)):
@@ -118,14 +104,8 @@ def throat_dist(N_diff, thetadiff, rdiff, blade_h, r_ext, min=0):
             if dist < Distance:
                 Distance = dist
                 index = [j, -1]
-        # ax.plot(thetadiff, rdiff, 'blue')
-        # ax.plot(thetadiff_2, rdiff, 'blue')
-        # ax.scatter(thetadiff_2[index[0]], rdiff[index[0]])
     area = blade_h * Distance
-    # plt.yticks([])
-    # plt.ylim(0, None)
-    # plt.show()
-    return(area, index, thetadiff_2)
+    return(area, index)
 
 def blade_length(r_array, theta_array, index_start):
     xs = r_array * np.cos(theta_array)
