@@ -17,6 +17,7 @@ def V_r(r, rho, h):
     return mdot / (2 * np.pi * rho * r * h)
 
 
+
 def main(rpm):
     omega = rpm * 2 * np.pi / 60
     # DATA INPUT
@@ -24,7 +25,7 @@ def main(rpm):
     air = tm.Node(101325, 293, 287)
 
     # turbine blade rows (doesn't matter for now)
-    tur_rotor = tm.BladeRow(bi=0, bo=0, ri=0.050, ro=0.100, N=15, rotor=True)
+    tur_rotor = tm.BladeRow(bi=0, bo=0, ri=0.050, ro=0.100, N=16, rotor=True)
     tur_stator = tm.BladeRow(bi=0, bo=0, ri=0.105, ro=0.155, N=12, rotor=False)
 
     # turbine
@@ -94,6 +95,9 @@ def main(rpm):
     for i in range(tur.stator.N):
         plt.polar(tur.stator.theta(r) + i * 2 * np.pi / tur.stator.N, r, 'red')
 
+    tur.rotor.plot_xy("turbine-rotor.txt")
+    tur.stator.plot_xy("turbine-stator.txt")
+
     print(f'ROTOR:\n'
           f'    beta-outer: {tur.rotor.bo / deg:.2f}°\n'
           f'    beta-inner: {tur.rotor.bi / deg:.2f}°\n'
@@ -112,4 +116,4 @@ def main(rpm):
 
 
 if __name__ == "__main__":
-    main(9331)
+    main(9290)

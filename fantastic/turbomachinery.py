@@ -69,6 +69,23 @@ class BladeRow:
         self.c1 = 2 * (np.tan(self.bi) - np.tan(self.bo)) / (self.ri ** 2 - self.ro ** 2)
         self.c2 = np.tan(self.bi) - self.c1 * self.ri ** 2 / 2
 
+    def plot_xy(self, filename, n=1000):
+        file = open(filename, "w+")
+        rs = np.linspace(self.ri, self.ro, n)
+        thetas = self.theta(rs)
+
+        for r, theta in zip(rs, thetas):
+            x = r * np.cos(theta)
+            y = r * np.sin(theta)
+            z = 0
+            file.write(str(x))
+            file.write(',')
+            file.write(str(y))
+            file.write(',')
+            file.write(str(z))
+            file.write('\n')
+        file.close()
+
 
 class Turbomachine:
     def __init__(self):
