@@ -3,6 +3,11 @@ from numpy.polynomial import Polynomial
 import globals as gb
 from matplotlib import pyplot as plt
 import cmath
+import numpy as np
+import pandas as pd
+from numpy.polynomial import Polynomial
+from scipy.integrate import quad
+from scipy.interpolate import UnivariateSpline
 
 def dh0(delta_p, rho, eff):
     enthalpy = delta_p/(rho * eff)
@@ -44,7 +49,7 @@ def T_data(omega, I=0.002456):
     domega_dt = (0.0260*t**2)-(0.8032*t)+14.2316
     T_loss = I*domega_dt
     return T_loss    
-    
+
 def omega_calc(T_loss, eta_c, eta_t, vacuum_power, omega_c):
     P_loss = T_loss * omega_c
     eta_m = (vacuum_power*eta_t - P_loss)/(eta_t*(vacuum_power - (eta_c*P_loss)))

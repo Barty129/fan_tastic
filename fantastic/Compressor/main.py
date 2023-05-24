@@ -4,7 +4,7 @@ import functions as fn
 import scipy
 from matplotlib import pyplot as plt
 
-step = 1E-4
+step = 5E-5
 def main():
     #Find radial velocities
     V1_r = fn.v_radial(gb.m_dot, gb.r_1, gb.rho, gb.blade_height)
@@ -88,6 +88,20 @@ def main():
     plt.yticks([])
     plt.ylim(0, None)
     plt.show()
+
+    file = open("Diffuser.txt","w+")
+    theta_plot = theta_rot
+    for j in range(len(rdiff)):
+        x = rdiff[j] * np.cos(theta_plot[j])
+        y = rdiff[j] * np.sin(theta_plot[j])
+        z = 0
+        file.write(str(x))
+        file.write(',')
+        file.write(str(y))
+        file.write(',')
+        file.write(str(z))
+        file.write('\n')
+    file.close()
 
 if __name__ == "__main__":
     main()
