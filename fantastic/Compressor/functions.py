@@ -43,8 +43,7 @@ def T_data(omega, I=0.002456):
     t = (1.20979252149514 * (omega**3)/(10**7))-(0.000331891054100759*(omega**2))+(0.332356972914549*omega)-72.7879697323764
     domega_dt = (0.0260*t**2)-(0.8032*t)+14.2316
     T_loss = I*domega_dt
-    return T_loss
-    
+    return T_loss    
     
 def omega_calc(T_loss, eta_c, eta_t, vacuum_power, omega_c):
     P_loss = T_loss * omega_c
