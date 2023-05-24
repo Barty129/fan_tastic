@@ -17,7 +17,7 @@ def omega_opt(T_loss_0, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess
     dh0_c = dh0(dp_guess_comp,rho,eta_c)
     power = vacuum_power_0
     T_loss = T_loss_0
-    while count2 < 10:
+    while count2 < 30:
         a = sigma0 * (r_2**2)
         b = V2_r * (r_2 ** 2) * np.tan(beta_2)
         c = -dh0_c
@@ -27,10 +27,24 @@ def omega_opt(T_loss_0, eta_c, eta_t, vacuum_power_0, suction_box_rise, dp_guess
         w_turbine, eta_m, eta_ov = omega_calc(T_loss, eta_c, eta_t, power, omega)
         dp_new_comp = suction_box_rise*eta_ov/(1-eta_ov)
         dh0_c = dh0(dp_new_comp,rho,eta_c)
-        I_discs = 0.002456
-        T_loss = (omega * 0.0348) * I_discs
+        T_loss = T_data(omega)
         count2 += 1
     return omega
+
+def T_analytic(omega, rho = gb.rho, r_2 = gb.r_2, f_0 = 0.85, nu=100e-6, d_m=0.025):
+        C_f = 0.0025
+        n = omega * 60/(2 * np.pi)
+        M_0 = f_0 * 1e3 * (nu * n) ** (2 / 3) * d_m ** 3
+        T_1 = 0.2 * rho *np.pi * C_f * ((r_2)**5) * (omega**2) 
+        T_ov = 2 * M_0 + 4 * T_1
+        return T_ov
+
+def T_data(omega, I=0.002456):
+    t = (1.20979252149514 * (omega**3)/(10**7))-(0.000331891054100759*(omega**2))+(0.332356972914549*omega)-72.7879697323764
+    domega_dt = (0.0260*t**2)-(0.8032*t)+14.2316
+    T_loss = I*domega_dt
+    return T_loss
+    
     
 def omega_calc(T_loss, eta_c, eta_t, vacuum_power, omega_c):
     P_loss = T_loss * omega_c
@@ -73,15 +87,6 @@ def blades_plot(r_1, r_2, beta1, beta2, step):
         theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
     return(r_val, theta)   
 
-def stator_blades(r_3, r_4, beta_3, beta_4, step):
-    # plots diffuser blade shapes
-    r_val = np.arange(r_3, r_4, step)
-    theta = np.zeros(len(r_val))
-    b = beta_3 + (beta_4 - beta_3) * (r_val - r_3)/(r_4 - r_3)
-    for j in range(1, len(r_val)):
-        theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
-    return(r_val, theta) 
-
 def throat_dist(N_diff, thetadiff, rdiff, blade_h, r_ext, min=0):
     #Computes minimum for min = 1, max otherwise
     thetadiff_2 = thetadiff + (2*np.pi/N_diff)
@@ -115,3 +120,12 @@ def blade_length(r_array, theta_array, index_start):
         dr = np.sqrt((xs[i+1] - xs[i])**2 + (ys[i+1] - ys[i])**2)
         blade_length += dr
     return blade_length
+
+def stator_blades(r_3, r_4, beta_3, beta_4, step):
+    # plots diffuser blade shapes
+    r_val = np.arange(r_3, r_4, step)
+    theta = np.zeros(len(r_val))
+    b = beta_3 + (beta_4 - beta_3) * (r_val - r_3)/(r_4 - r_3)
+    for j in range(1, len(r_val)):
+        theta[j] = theta[j-1] + np.tan(b[j])/r_val[j] * step
+    return(r_val, theta) 

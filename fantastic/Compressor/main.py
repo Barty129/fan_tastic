@@ -69,21 +69,6 @@ def main():
     print('Area ratio = {}'.format(area_ratio))
     print('Diffuser Angle = {}'.format(diffuser_angle/deg))
 
-
-    file = open("Rot15.txt","w+")
-    theta_plot = theta_rot + (14*2*np.pi)/int(Nb)
-    for j in range(len(r_rot)):
-        x = r_rot[j] * np.cos(theta_plot[j])
-        y = r_rot[j] * np.sin(theta_plot[j])
-        z = 0
-        file.write(str(x))
-        file.write(',')
-        file.write(str(y))
-        file.write(',')
-        file.write(str(z))
-        file.write('\n')
-    file.close()
-
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     angle = np.linspace(0,2*np.pi,1000)
     r1_array = gb.r_1*np.ones(len(angle))
