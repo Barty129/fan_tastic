@@ -8,6 +8,8 @@ eff_c = 0.6
 eff_t = 0.65
 mdot = 0.0623
 
+PITCH_TO_CHORD = 0.5
+
 deg = 2 * np.pi / 360
 
 
@@ -22,8 +24,8 @@ def main(rpm):
     air = tm.Node(101325, 293, 287)
 
     # turbine blade rows (doesn't matter for now)
-    tur_rotor = tm.BladeRow(bi=0, bo=0, ri=0.050, ro=0.100, N=15)
-    tur_stator = tm.BladeRow(bi=0, bo=0, ri=0.105, ro=0.155, N=15)
+    tur_rotor = tm.BladeRow(bi=0, bo=0, ri=0.050, ro=0.100, N=15, rotor=True)
+    tur_stator = tm.BladeRow(bi=0, bo=0, ri=0.105, ro=0.155, N=12, rotor=False)
 
     # turbine
     tur = tm.Turbine(tur_rotor, tur_stator, h=0.012)
@@ -37,16 +39,16 @@ def main(rpm):
     V_r_ro = V_r(tur.rotor.ro, air.density, tur.h)
     V_r_ri = V_r(tur.rotor.ri, air.density, tur.h)
 
+    # beta4 comes from the exit condition having zero swirl, and beta = alpha-5deg
+    tur.rotor.bi = np.arctan(-omega * tur.rotor.ri / V_r_ri) - 5 * deg
+
+    # beta outer
     # function to be solved when beta_3, N and the velocities are compatible
     def f(x, N):
         return omega * tur.rotor.ro * (1 - np.cos(x) ** 0.5 / N ** 0.7) + V_r_ro * np.tan(x) - V_t_ro
 
     # beta3 comes from solving the above function
     tur.rotor.bo = root_scalar(f, args=(tur.rotor.N,), bracket=[0.1 - np.pi / 2, np.pi / 2 - 0.1]).root
-    # beta4 comes from the exit condition having zero swirl, and beta = alpha-5deg
-    tur.rotor.bi = np.arctan(-omega * tur.rotor.ri / V_r_ri) - 5 * deg
-    # get sigma from calculation
-    tur.rotor.sigma = 1 - np.cos(tur.rotor.bo) ** 0.5 / tur.rotor.N ** 0.7
 
     # midpoint analysis for checking minimum number of blades
     r_mid = (tur.rotor.ro + tur.rotor.ri) / 2
@@ -83,14 +85,14 @@ def main(rpm):
     V_r_si = V_r(tur.stator.ri, air.density, tur.h)
     tur.stator.bi = np.arctan(V_t_si / V_r_si)
 
-    pitch = 0.75 * tur.stator.chord
+    pitch = PITCH_TO_CHORD * tur.stator.chord
     tur.stator.N = int(np.ceil(np.clip(2 * np.pi * tur.stator.ri / pitch, 8, 21)))
 
     r = np.linspace(tur.stator.ri, tur.stator.ro, 100)
     plt.polar(circle, tur.stator.ri * np.ones_like(circle), 'k--')
     plt.polar(circle, tur.stator.ro * np.ones_like(circle), 'k--')
     for i in range(tur.stator.N):
-        plt.polar(tur.stator.theta(r, False) + i * 2 * np.pi / tur.stator.N, r, 'red')
+        plt.polar(tur.stator.theta(r) + i * 2 * np.pi / tur.stator.N, r, 'red')
 
     print(f'ROTOR:\n'
           f'    beta-outer: {tur.rotor.bo / deg:.2f}°\n'
@@ -110,4 +112,4 @@ def main(rpm):
 
 
 if __name__ == "__main__":
-    main(9500)
+    main(9331)
