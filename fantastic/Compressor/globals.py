@@ -14,6 +14,7 @@ r_2 = 0.10 #m
 r_4 = 0.155
 blade_height = 12 * 10**(-3)#m
 thickness = 0.5E-3 #m
+deg = np.pi/180
 
 #For iteration
 eff_comp = 0.6 #initial compressr efficiency estimate
@@ -21,8 +22,11 @@ eff_turb = 0.65
 sigma_0 = 0.85
 
 #Design choice
-beta2 = -0.7
+beta2 = -46 * deg #-46
+beta_4 = 59 * deg #59
 G_val = 1.075
 v1_theta = 0
-N_diff = 14
-inlet_angle = 5
+N_diff = 12 #12
+inlet_angle_rotor = 5
+inlet_angle_diff = 3
+

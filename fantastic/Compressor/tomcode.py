@@ -175,7 +175,7 @@ def rotoroptimiser():
 beta2 = -1
 omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc()
 N = bladenumber()
-N = round(N * 1.25)
+N = np.ceil(N * 1.25)
 omega, Vtheta1, Vtheta2, VthetaRel1, VthetaRel2, Vr1, Vr2, alpha1, alpha2, alphaRel1, alphaRel2, beta1, beta2, V1, V2, Vrel1, Vrel2 = velocitycalc(N)
 bladeplot(N, r1, r2, step, beta1, beta2)
 r3 = r2 * vaneless
