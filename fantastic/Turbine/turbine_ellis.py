@@ -17,7 +17,6 @@ def V_r(r, rho, h):
     return mdot / (2 * np.pi * rho * r * h)
 
 
-
 def main(rpm):
     omega = rpm * 2 * np.pi / 60
     # DATA INPUT
@@ -25,8 +24,8 @@ def main(rpm):
     air = tm.Node(101325, 293, 287)
 
     # turbine blade rows (doesn't matter for now)
-    tur_rotor = tm.BladeRow(bi=0, bo=0, ri=0.050, ro=0.100, N=16, rotor=True)
-    tur_stator = tm.BladeRow(bi=0, bo=0, ri=0.105, ro=0.155, N=12, rotor=False)
+    tur_rotor = tm.BladeRow(bi=-1.3832, bo=0.9082, ri=0.050, ro=0.100, N=16, const_p=False)
+    tur_stator = tm.BladeRow(bi=0.0000, bo=1.4988, ri=0.105, ro=0.155, N=12, const_p=False)
 
     # turbine
     tur = tm.Turbine(tur_rotor, tur_stator, h=0.012)
@@ -62,13 +61,11 @@ def main(rpm):
     Nb_min = mdot * drVt_dr / (2 * air.density * W_rm ** 2 * r_mid * tur.h)
 
     # number of blades comes from taking the above minimum, adding 25% then clipping to a sensible range
-    tur.rotor.N = int(np.clip(1.25 * np.max(Nb_min), 8, 21))
+    tur.rotor.N = int(np.clip(1.25 * Nb_min, 8, 21))
 
     # recalculate beta 3 and sigma with new bladenumber
     tur.rotor.bo = root_scalar(f, args=(tur.rotor.N,), bracket=[0.1 - np.pi / 2, np.pi / 2 - 0.1]).root
     tur.rotor.sigma = 1 - np.cos(tur.rotor.bo) ** 0.5 / tur.rotor.N ** 0.7
-    # generate shape
-    tur.rotor.generate_rotor()
 
     # calculate throat area for later checks
     # throat_area = 2 * np.pi * tur.rotor.ri * np.cos(tur.rotor.bi + 5 * deg) * tur.h
@@ -95,16 +92,16 @@ def main(rpm):
     for i in range(tur.stator.N):
         plt.polar(tur.stator.theta(r) + i * 2 * np.pi / tur.stator.N, r, 'red')
 
-    tur.rotor.plot_xy("turbine-rotor.txt")
-    tur.stator.plot_xy("turbine-stator.txt")
+    tur.rotor.plot_xy("Turbine/turbine-rotor.txt")
+    tur.stator.plot_xy("Turbine/turbine-stator.txt")
 
     print(f'ROTOR:\n'
-          f'    beta-outer: {tur.rotor.bo / deg:.2f}°\n'
-          f'    beta-inner: {tur.rotor.bi / deg:.2f}°\n'
+          f'    beta-outer: {tur.rotor.bo/deg:3.4}°\n'
+          f'    beta-inner: {tur.rotor.bi/deg:3.4}°\n'
           f'    Nb: {tur.rotor.N}\n'
           f'STATOR\n'
-          f'    beta-outer: {tur.stator.bo / deg:.2f}°\n'
-          f'    beta-inner: {tur.stator.bi / deg:.2f}°\n'
+          f'    beta-outer: {tur.stator.bo/deg:3.4}°\n'
+          f'    beta-inner: {tur.stator.bi/deg:3.4}°\n'
           f'    Nb: {tur.stator.N}\n'
           f'GENERAL:\n'
           f'    rpm: {rpm}')

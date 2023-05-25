@@ -35,7 +35,7 @@ class BladeRow:
     ri: float
     ro: float
     N: int
-    rotor: bool
+    const_p: bool
 
     sigma: float = 0.85
 
@@ -44,7 +44,7 @@ class BladeRow:
 
     @property
     def chord(self):
-        if self.rotor:
+        if self.const_p:
             def f(r):
                 return np.sqrt(1 + (self.c1 * r ** 2 / 2 + self.c2) ** 2)
         else:
@@ -57,7 +57,7 @@ class BladeRow:
         return np.arctan(self.c1 * r ** 2 / 2 + self.c2)
 
     def theta(self, r):
-        if 0 and self.rotor:
+        if self.const_p:
             return self.c1 * r ** 2 / 4 + self.c2 * np.log(r)
         else:
             return np.array([quad(lambda x: np.tan(self.bi + (x - self.ri) * (self.bo - self.bi) / (self.ro - self.ri)) / x,
@@ -65,26 +65,19 @@ class BladeRow:
                                   r_i
                                   )[0] for r_i in r])
 
-    def generate_rotor(self):
+    def generate_const_p(self):
         self.c1 = 2 * (np.tan(self.bi) - np.tan(self.bo)) / (self.ri ** 2 - self.ro ** 2)
         self.c2 = np.tan(self.bi) - self.c1 * self.ri ** 2 / 2
 
     def plot_xy(self, filename, n=1000):
-        file = open(filename, "w+")
-        rs = np.linspace(self.ri, self.ro, n)
-        thetas = self.theta(rs)
+        with open(filename, "w+") as file:
+            rs = np.linspace(self.ri, self.ro, n)
+            thetas = self.theta(rs)
 
-        for r, theta in zip(rs, thetas):
-            x = r * np.cos(theta)
-            y = r * np.sin(theta)
-            z = 0
-            file.write(str(x))
-            file.write(',')
-            file.write(str(y))
-            file.write(',')
-            file.write(str(z))
-            file.write('\n')
-        file.close()
+            for r, theta in zip(rs, thetas):
+                x = r * np.cos(theta)
+                y = r * np.sin(theta)
+                file.write(f'{x},{y},0\n')
 
 
 class Turbomachine:
