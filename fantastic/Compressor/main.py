@@ -4,7 +4,7 @@ import functions as fn
 import scipy
 from matplotlib import pyplot as plt
 
-step = 1E-4
+step = 5E-5
 def main():
     #Find radial velocities
     V1_r = fn.v_radial(gb.m_dot, gb.r_1, gb.rho, gb.blade_height)
