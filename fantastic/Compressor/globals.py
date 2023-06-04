@@ -22,7 +22,7 @@ eff_turb = 0.65
 sigma_0 = 0.85
 
 #Design choice
-beta2 = -46 * deg #-46
+beta2 = - 46 * deg #-46
 beta_4 = 59 * deg #59
 G_val = 1.075
 v1_theta = 0

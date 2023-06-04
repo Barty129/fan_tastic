@@ -17,6 +17,7 @@ def main():
     omega_first = fn.omega_opt(gb.T_loss, gb.eff_comp, gb.eff_turb, gb.suction_power_start, \
                             gb.suction, gb.delta_p_comp_start, V2_r, beta_2, gb.r_2, gb.sigma_0, gb.rho)
 
+    #omega_first = 6600 * 2* np.pi/60
     #Velocity triangles first pass (incorrect slip)
     beta_1, v2_theta, v1_rel, v2_rel = fn.velocity2_triangles(gb.r_1, gb.r_2, V1_r, V2_r, beta_2, omega_first, 0)
     
@@ -41,6 +42,8 @@ def main():
     omega = fn.omega_opt(gb.T_loss, gb.eff_comp, gb.eff_turb, gb.suction_power_start, \
                     gb.suction, gb.delta_p_comp_start, V2_r, beta_2, gb.r_2, sigma2, gb.rho)
     beta_1, v2_theta, v1_rel, v2_rel = fn.velocity2_triangles(gb.r_1, gb.r_2, V1_r, V2_r, beta_2, omega, Nb)
+    omega = 6600 * 2* np.pi/60
+    beta_1_dummy, v2_theta, v1_rel, v2_rel = fn.velocity2_triangles(gb.r_1, gb.r_2, V1_r, V2_r, beta_2, omega, Nb)
     print('beta_1 = {} deg'.format(beta_1/deg))
     print('beta_2 = {} deg'.format(beta_2/deg))
     print('omega = {} rpm'.format(omega * 60/(2*np.pi)))
@@ -88,6 +91,20 @@ def main():
     plt.yticks([])
     plt.ylim(0, None)
     plt.show()
+
+    file = open("Stat_alt.txt","w+")
+    theta_plot = thetadiff + (8*2*np.pi)/int(Nb)
+    for j in range(len(rdiff)):
+        x = rdiff[j] * np.cos(theta_plot[j])
+        y = rdiff[j] * np.sin(theta_plot[j])
+        z = 0
+        file.write(str(x))
+        file.write(',')
+        file.write(str(y))
+        file.write(',')
+        file.write(str(z))
+        file.write('\n')
+    file.close()
 
 if __name__ == "__main__":
     main()
